@@ -292,7 +292,7 @@ foreach ($dep in $deps) {
         if ($_.Exception.Message -match "0x80073D06|already installed|higher version") {
             Write-Ok "$leaf already present, skipping."
         } else {
-            Write-Warn "Could not install $leaf: $_"
+            Write-Warn "Could not install $leaf : $_"
         }
     }
 }
