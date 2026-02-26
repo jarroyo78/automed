@@ -130,12 +130,12 @@ Write-Host "    Using temp folder: $script:TempDir" -ForegroundColor Gray
 
 # List of required files
 $requiredFiles = @(
-    @{ File = "Medicus.Xamarin.UWP_1.0.0.0_x64.cer"; Url = "https://media.githubusercontent.com/media/jarroyo78/automed/main/Medicus.Xamarin.UWP_1.0.0.0_x64.cer"; MinSize = 500B },  # Changed from 1KB to 500B
-    @{ File = "Microsoft.NET.CoreRuntime.2.2.appx"; Url = "https://media.githubusercontent.com/media/jarroyo78/automed/main/Microsoft.NET.CoreRuntime.2.2.appx"; MinSize = 5MB },  # This one worked!
-    @{ File = "Microsoft.NET.CoreFramework.Debug.2.2 - Copy.appx"; Url = "https://media.githubusercontent.com/media/jarroyo78/automed/main/Microsoft.NET.CoreFramework.Debug.2.2%20-%20Copy.appx"; MinSize = 7MB },  # Changed from 8MB to 7MB
-    @{ File = "Microsoft.VCLibs.x64.14.00.appx"; Url = "https://media.githubusercontent.com/media/jarroyo78/automed/main/Microsoft.VCLibs.x64.14.00.appx"; MinSize = 800KB },  # This one worked!
-    @{ File = "Microsoft.VCLibs.x64.14.00.Desktop.appx"; Url = "https://media.githubusercontent.com/media/jarroyo78/automed/main/Microsoft.VCLibs.x64.14.00.Desktop.appx"; MinSize = 6MB },  # This one worked!
-    @{ File = "Medicus.Xamarin.UWP_1.0.411.0_x64.appx"; Url = "https://media.githubusercontent.com/media/jarroyo78/automed/main/Medicus.Xamarin.UWP_1.0.411.0_x64.appx"; MinSize = 90MB }  # This one worked!
+    @{ File = "Medicus.Xamarin.UWP_1.0.0.0_x64.cer"; Url = "https://media.githubusercontent.com/media/jarroyo78/automed/main/Medicus.Xamarin.UWP_1.0.0.0_x64.cer"; MinSize = 800 },  # 800 bytes (actual is 811)
+    @{ File = "Microsoft.NET.CoreRuntime.2.2.appx"; Url = "https://media.githubusercontent.com/media/jarroyo78/automed/main/Microsoft.NET.CoreRuntime.2.2.appx"; MinSize = 5MB },  # 5MB works
+    @{ File = "Microsoft.NET.CoreFramework.Debug.2.2 - Copy.appx"; Url = "https://media.githubusercontent.com/media/jarroyo78/automed/main/Microsoft.NET.CoreFramework.Debug.2.2%20-%20Copy.appx"; MinSize = 7MB },  # 7MB works
+    @{ File = "Microsoft.VCLibs.x64.14.00.appx"; Url = "https://media.githubusercontent.com/media/jarroyo78/automed/main/Microsoft.VCLibs.x64.14.00.appx"; MinSize = 800KB },  # 800KB works
+    @{ File = "Microsoft.VCLibs.x64.14.00.Desktop.appx"; Url = "https://media.githubusercontent.com/media/jarroyo78/automed/main/Microsoft.VCLibs.x64.14.00.Desktop.appx"; MinSize = 6MB },  # 6MB works
+    @{ File = "Medicus.Xamarin.UWP_1.0.411.0_x64.appx"; Url = "https://media.githubusercontent.com/media/jarroyo78/automed/main/Medicus.Xamarin.UWP_1.0.411.0_x64.appx"; MinSize = 90MB }  # 90MB works
 )
 
 Write-Host "    Downloading required files from GitHub..." -ForegroundColor Cyan
