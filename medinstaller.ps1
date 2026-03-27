@@ -299,8 +299,14 @@ foreach ($dep in $deps) {
 
 # 9. Install VCLibs separately first
 Write-Step "Installing VCLibs framework packages..."
+$vclibsInstalled = @($baseInstalled, $desktopInstalled)
 $vclibsFiles = @($vclibsBase, $vclibsDesktop)
-foreach ($vclib in $vclibsFiles) {
+foreach ($i in 0..($vclibsFiles.Count - 1)) {
+    $vclib = $vclibsFiles[$i]
+    if ($vclibsInstalled[$i]) {
+        Write-Ok "$(Split-Path $vclib -Leaf) already installed, skipping."
+        continue
+    }
     if (Test-Path $vclib) {
         $name = Split-Path $vclib -Leaf
         Write-Host "    Installing $name..." -ForegroundColor Gray
@@ -361,19 +367,52 @@ try {
         $appId = $manifest.Package.Applications.Application.Id
         $aumid = "$($appPackage.PackageFamilyName)!$appId"
         
-        # Find the best icon from the installed app
-        $installLocation = $appPackage.InstallLocation
-        $iconFile = Get-ChildItem -Path $installLocation -Filter "*.ico" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-        if (-not $iconFile) {
-            $iconFile = Get-ChildItem -Path $installLocation -Filter "*.png" -Recurse -ErrorAction SilentlyContinue |
-                        Where-Object { $_.Name -match "StoreLogo|Square150|Square44|Logo" } |
-                        Sort-Object Length -Descending |
-                        Select-Object -First 1
+        # Extract the app icon to a public location so the shortcut can read it
+        $iconDir = "C:\ProgramData\Medicus"
+        $iconPath = "$iconDir\medicus.ico"
+        if (-not (Test-Path $iconDir)) { New-Item -ItemType Directory -Path $iconDir | Out-Null }
+
+        $srcPng = Join-Path $appPackage.InstallLocation "Assets\Square150x150Logo.scale-200.png"
+        if (-not (Test-Path $srcPng)) {
+            # Fallback to any available square logo
+            $srcPng = Get-ChildItem (Join-Path $appPackage.InstallLocation "Assets") -Filter "Square150x150Logo*" |
+                      Select-Object -First 1 -ExpandProperty FullName
         }
-        if (-not $iconFile) {
-            $iconFile = Get-ChildItem -Path $installLocation -Filter "*.png" -Recurse -ErrorAction SilentlyContinue |
-                        Sort-Object Length -Descending |
-                        Select-Object -First 1
+
+        if ($srcPng -and (Test-Path $srcPng)) {
+            Add-Type -AssemblyName System.Drawing
+            $img = [System.Drawing.Image]::FromFile($srcPng)
+            $sizes = @(256, 128, 64, 48, 32, 16)
+            $ms = New-Object System.IO.MemoryStream
+            $bw = New-Object System.IO.BinaryWriter($ms)
+            $bw.Write([uint16]0); $bw.Write([uint16]1); $bw.Write([uint16]$sizes.Count)
+            $dataOffset = 6 + 16 * $sizes.Count
+            $imageData = @()
+            foreach ($size in $sizes) {
+                $bmp = New-Object System.Drawing.Bitmap($size, $size)
+                $g = [System.Drawing.Graphics]::FromImage($bmp)
+                $g.InterpolationMode = 'HighQualityBicubic'
+                $g.DrawImage($img, 0, 0, $size, $size)
+                $g.Dispose()
+                $imgMs = New-Object System.IO.MemoryStream
+                $bmp.Save($imgMs, [System.Drawing.Imaging.ImageFormat]::Png)
+                $bmp.Dispose()
+                $imageData += ,$imgMs.ToArray()
+                $imgMs.Dispose()
+            }
+            $offset = $dataOffset
+            foreach ($i in 0..($sizes.Count - 1)) {
+                $sz = $sizes[$i]; $data = $imageData[$i]
+                $bw.Write([byte]($sz -band 0xFF)); $bw.Write([byte]($sz -band 0xFF))
+                $bw.Write([byte]0); $bw.Write([byte]0)
+                $bw.Write([uint16]1); $bw.Write([uint16]32)
+                $bw.Write([uint32]$data.Length); $bw.Write([uint32]$offset)
+                $offset += $data.Length
+            }
+            foreach ($data in $imageData) { $bw.Write($data) }
+            $bw.Flush()
+            [System.IO.File]::WriteAllBytes($iconPath, $ms.ToArray())
+            $ms.Dispose(); $img.Dispose()
         }
 
         $wsh = New-Object -ComObject WScript.Shell
@@ -381,12 +420,7 @@ try {
         $shortcut.TargetPath = "explorer.exe"
         $shortcut.Arguments = "shell:AppsFolder\$aumid"
         $shortcut.WindowStyle = 1
-        if ($iconFile) {
-            $shortcut.IconLocation = "$($iconFile.FullName),0"
-            Write-Ok "Icon set: $($iconFile.Name)"
-        } else {
-            Write-Warn "No icon found, shortcut will use default."
-        }
+        if (Test-Path $iconPath) { $shortcut.IconLocation = "$iconPath,0" }
         $shortcut.Save()
         Write-Ok "Shortcut created at: $shortcutPath"
     }
